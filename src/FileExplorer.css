@@ -1,0 +1,48 @@
+.file-explorer {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.file-list {
+  margin-top: 10px;
+}
+
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+li {
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.file-name {
+  margin-left: 10px;
+}
+
+.file-size {
+  padding-left: 10px;
+  color: #666;
+  font-size: 0.8em;
+}
+
+img {
+  width: 20px;
+  height: 20px;
+}
+
+.depth-1 {
+  padding-left: 20px;
+}
+
+.depth-2 {
+  padding-left: 40px;
+}
+
+.depth-3 {
+  padding-left: 60px;
+}
+
+/* Ajoutez plus de styles pour d'autres niveaux de profondeur au besoin */
