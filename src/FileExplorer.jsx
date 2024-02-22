@@ -1,10 +1,66 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import folderIcon from './folder.png';
 import fileIcon from './file.png';
 import './FileExplorer.css';
+import axios from 'axios';
 
+//https://global.download.synology.com/download/Document/Software/DeveloperGuide/Package/FileStation/All/enu/Synology_File_Station_API_Guide.pdf
 const FileExplorer = () => {
   const [files, setFiles] = useState([]);
+
+  const headers = {
+    'Access-Control-Allow-Origin': '*'
+  };
+
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+      const token = await axios.get(
+        '/webapi/entry.cgi',
+        {
+          params: {
+            api: 'SYNO.API.Auth',
+            version: '6',
+            method: 'login',
+            account: process.env.REACT_APP_SYNOLOGY_API_LOGIN,
+            passwd: process.env.REACT_APP_SYNOLOGY_API_PASSWORD,
+            enable_syno_token: 'yes',
+            session: 'FileStation'
+          },
+          headers
+        })
+      const response = await axios.get(
+        '/webapi/entry.cgi',
+        {
+          params: {
+            api: 'SYNO.FileStation.List',
+            version: '2',
+            method: 'list',
+            SynoToken: token.data.data.synotoken,
+            folder_path: '/Media/Films',
+            recursive: true,
+            additional: '["real_path","size","time,perm","type"]'
+          },
+          headers
+        })
+        console.log(response.data.data.files)
+        await axios.get(
+          '/webapi/entry.cgi',
+          {
+            params: {
+              api: 'SYNO.API.Auth',
+              version: '6',
+              method: 'logout',
+              session: 'FileStation'
+            },
+            headers
+          })
+      // setFiles(response.data.data.files);
+      setFiles(response.data.data.files.sort((a,b) => b.additional.size - a.additional.size));
+  }
 
   const handleFileChange = (event) => {
     const fileList = event.target.files;
@@ -65,32 +121,26 @@ const FileExplorer = () => {
   const renderFiles = (files, depth = 0) => {
     return (
       <ul className={`depth-${depth}`}>
-        {Object.entries(files).map(([name, item], index) => (
-          <>
-            {name === 'files' ? (
-              item && (
-                item.map((file, fileIndex) => (
-                  <li key={index}>
+          {files.map(item => <>
+            {!item.isdir ? (
+                  <li key={item.name}>
                     <img src={fileIcon} alt="file" />
                     <span className="file-info">
-                      <span className="file-name">{file.name}</span>
-                      <span className="file-size">{formatFileSize(file.size)}</span>
+                      <span className="file-name">{item.name}</span>
+                      <span className="file-size">{formatFileSize(item.additional.size)}</span>
                     </span>
                   </li>
-                ))
-              )
             ) : (
-              <li key={index}>
+              <li key={item.name}>
                 <img src={folderIcon} alt="folder" />
                 <span className="file-info">
-                  <span className="file-name">{name}</span>
-                  <span className="file-size">{formatFileSize(getFolderSize(item))}</span>
-                  {/*item.files ? renderFiles(item.files, depth + 1) : null*/}
+                  <span className="file-name">{item.name}</span>
+                  <span className="file-size">{formatFileSize(item.additional.size)}</span>
                 </span>
-                </li>
+              </li>
             )}
           </>
-        ))}
+        )}
       </ul>
     );
   };  
@@ -98,8 +148,8 @@ const FileExplorer = () => {
   return (
     <div className="file-explorer">
       <h1>Explorer le contenu d'un répertoire</h1>
-      <input type="file" webkitdirectory="" directory="" onChange={handleFileChange} />
       <div className="file-list">{renderFiles(files)}</div>
+      { (!files || !files.length) && <p>Chargement ...</p>}
     </div>
   );
 };
