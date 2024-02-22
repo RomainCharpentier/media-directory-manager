@@ -2,65 +2,36 @@ import React, { useEffect, useState } from 'react';
 import folderIcon from './folder.png';
 import fileIcon from './file.png';
 import './FileExplorer.css';
-import axios from 'axios';
+import { getFileList } from './services/synology.service';
 
 //https://global.download.synology.com/download/Document/Software/DeveloperGuide/Package/FileStation/All/enu/Synology_File_Station_API_Guide.pdf
 const FileExplorer = () => {
   const [files, setFiles] = useState([]);
 
-  const headers = {
-    'Access-Control-Allow-Origin': '*'
-  };
-
-
   useEffect(() => {
-    fetchData()
-  }, [])
+    fetchData('/Media/Films/DC');
+  }, []);
 
-  const fetchData = async () => {
-      const token = await axios.get(
-        '/webapi/entry.cgi',
-        {
-          params: {
-            api: 'SYNO.API.Auth',
-            version: '6',
-            method: 'login',
-            account: process.env.REACT_APP_SYNOLOGY_API_LOGIN,
-            passwd: process.env.REACT_APP_SYNOLOGY_API_PASSWORD,
-            enable_syno_token: 'yes',
-            session: 'FileStation'
-          },
-          headers
+  const fetchData = async (folder) => {
+    try {
+      const response = await getFileList(folder);
+      const files = response.data.data.files;
+
+      const folders = await Promise.all(
+        files.map(async (file) => {
+          if (file.isdir) {
+            const r2 = await getFileList(file.path);
+            file.items = r2.data.data.files;
+          }
+          return file;
         })
-      const response = await axios.get(
-        '/webapi/entry.cgi',
-        {
-          params: {
-            api: 'SYNO.FileStation.List',
-            version: '2',
-            method: 'list',
-            SynoToken: token.data.data.synotoken,
-            folder_path: '/Media/Films',
-            recursive: true,
-            additional: '["real_path","size","time,perm","type"]'
-          },
-          headers
-        })
-        console.log(response.data.data.files)
-        await axios.get(
-          '/webapi/entry.cgi',
-          {
-            params: {
-              api: 'SYNO.API.Auth',
-              version: '6',
-              method: 'logout',
-              session: 'FileStation'
-            },
-            headers
-          })
-      // setFiles(response.data.data.files);
-      setFiles(response.data.data.files.sort((a,b) => b.additional.size - a.additional.size));
-  }
+      );
+
+      setFiles(folders.sort((a, b) => getSize(b) - getSize(a)));
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
   const handleFileChange = (event) => {
     const fileList = event.target.files;
@@ -102,54 +73,68 @@ const FileExplorer = () => {
   };
 
   const getFolderSize = (folder) => {
-    const folderEntries = Object.entries(folder)
+    const folderEntries = folder.items;
     if (!folderEntries || !folderEntries.length) {
-      return 0
+      return 0;
     }
-    if (folderEntries.length === 1 && folderEntries.items) {
-      return folder.items.map(item => item.size).reduce((a,b) => a + b, 0)
+    return (
+      folder.additional.size +
+      folderEntries
+        .map((item) => {
+          if (item.isdir) {
+            return getFolderSize(item);
+          } else {
+            return item.additional.size;
+          }
+        })
+        .reduce((a, b) => a + b)
+    );
+  };
+
+  const getSize = (file) => {
+    if (file.isdir) {
+      return getFolderSize(file);
     }
-    return folderEntries.map(([name, item]) => {
-      if (name === 'files') {
-        return item.map(item => item.size).reduce((a,b) => a + b, 0)
-      } else {
-        return getFolderSize(item)
-      }
-    }).reduce((a,b) => a + b, 0)
-  }
+    return file.additional.size;
+  };
 
   const renderFiles = (files, depth = 0) => {
     return (
       <ul className={`depth-${depth}`}>
-          {files.map(item => <>
+        {files.map((item) => (
+          <>
             {!item.isdir ? (
-                  <li key={item.name}>
-                    <img src={fileIcon} alt="file" />
-                    <span className="file-info">
-                      <span className="file-name">{item.name}</span>
-                      <span className="file-size">{formatFileSize(item.additional.size)}</span>
-                    </span>
-                  </li>
+              <li key={item.name}>
+                <img src={fileIcon} alt="file" />
+                <span className="file-info">
+                  <span className="file-name">{item.name}</span>
+                  <span className="file-size">
+                    {formatFileSize(item.additional.size)}
+                  </span>
+                </span>
+              </li>
             ) : (
               <li key={item.name}>
                 <img src={folderIcon} alt="folder" />
                 <span className="file-info">
                   <span className="file-name">{item.name}</span>
-                  <span className="file-size">{formatFileSize(item.additional.size)}</span>
+                  <span className="file-size">
+                    {formatFileSize(getFolderSize(item))}
+                  </span>
                 </span>
               </li>
             )}
           </>
-        )}
+        ))}
       </ul>
     );
-  };  
+  };
 
   return (
     <div className="file-explorer">
       <h1>Explorer le contenu d'un répertoire</h1>
       <div className="file-list">{renderFiles(files)}</div>
-      { (!files || !files.length) && <p>Chargement ...</p>}
+      {(!files || !files.length) && <p>Chargement ...</p>}
     </div>
   );
 };
