@@ -57,4 +57,19 @@ const getFiles = (folder = '/Media') =>
     })
   );
 
-export { getFiles as getFileList };
+const deleteFile = (filePath) =>
+  createApi(() =>
+    axios.get('/webapi/entry.cgi', {
+      params: {
+        api: 'SYNO.FileStation.Delete',
+        version: '2',
+        method: 'delete',
+        SynoToken: getItem('token'),
+        path: filePath,
+        recursive: true
+      },
+      headers
+    })
+  );
+
+export { getFiles, deleteFile };
