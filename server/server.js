@@ -4,8 +4,9 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 import { getFiles, login } from './synology.api.js';
-import { Authorization, User } from './models.js';
+import { User } from './models.js';
 import dotenv from 'dotenv';
+import { generateToken, isAdmin, isAuth } from './utils/auth.js';
 
 if (process.env.NODE_ENV === 'development') {
   dotenv.config({ path: '.env.local' });
@@ -25,11 +26,11 @@ mongoose
       process.env.MONGODB_URL
     );
     const adminData = {
-      name: process.env.ADMIN_NAME,
-      password: 'process.env.ADMIN_PASSWORD',
-      isAdmin: true
+      username: process.env.ADMIN_NAME,
+      password: process.env.ADMIN_PASSWORD,
+      role: 'admin'
     };
-    await User.findOneAndUpdate({ name: adminData.name }, adminData, {
+    await User.findOneAndUpdate({ username: adminData.username }, adminData, {
       upsert: true,
       new: true
     })
@@ -51,40 +52,51 @@ app.use(cookieParser());
 app.use(cors({ origin: true, credentials: true }));
 
 // Routes
-app.get('/users', async (req, res) => {
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  const connectToSyno = req.query.connectToSyno === 'true';
   try {
-    const users = await User.find().populate('auth'); // Utilisez populate() pour récupérer les données d'autorisation associées
-    res.json(users);
+    let user = await User.findByCredentials(username, password);
+    if (!user.synotoken && connectToSyno) {
+      const response = await login(
+        process.env.SYNOLOGY_USERNAME,
+        process.env.SYNOLOGY_PASSWORD
+      );
+      const updatedUser = {
+        token: response.data.data.synotoken,
+        cookie: response.headers['set-cookie'].join(';'),
+        expirationDate: Math.min(
+          ...response.headers['set-cookie'].map((cookie) =>
+            getExpirationDate(cookie)
+          )
+        )
+      };
+      user = await User.findOneAndUpdate(
+        { username: user.username },
+        { $set: updatedUser },
+        { new: true }
+      );
+
+      console.log('updatedUser : ', user);
+    }
+    res.status(200).send(generateToken(user));
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(401).json({ message: error.message });
   }
 });
 
-app.post('/log', async (req, res) => {
-  // Ici, vous pouvez implémenter la logique de connexion
-  // Récupérez les données d'identification de la requête
-  const { user, password } = req.body;
-
+app.post('/register', isAdmin, async (req, res) => {
+  const { username, password, role } = req.body;
   try {
-    // Vérifiez si l'utilisateur existe dans la base de données
-    const user = await User.findOne({ email });
-
-    // Si l'utilisateur n'existe pas ou si le mot de passe est incorrect
-    if (!user || !user.isValidPassword(password)) {
-      return res
-        .status(401)
-        .json({ message: 'Adresse e-mail ou mot de passe incorrect' });
-    }
-
-    // Si l'utilisateur existe et le mot de passe est correct, vous pouvez générer un jeton d'authentification
-    const token = generateAuthToken(user);
-
-    // Réponse avec le token
-    res.status(200).json({ token });
+    const newUser = new User({
+      username,
+      password,
+      role
+    });
+    const userSaved = await newUser.save();
+    res.status(201).json(userSaved);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur lors de la connexion' });
+    res.status(401).json({ message: error.message });
   }
 });
 
@@ -103,27 +115,9 @@ const getExpirationDate = (cookieString) => {
   return expirationDate;
 };
 
-// app.post('/login', async (req, res) => {
-//   const response = await login(req.body.user, req.body.password);
-//   res.set('Set-Cookie', response.headers['set-cookie']);
-//   const user = {
-//     name: req.body.user,
-//     token: response.data.data.synotoken,
-//     cookie: response.headers['set-cookie'].join(';'),
-//     expirationDate: Math.min(
-//       ...response.headers['set-cookie'].map((cookie) =>
-//         getExpirationDate(cookie)
-//       )
-//     )
-//   };
-//   const newUser = await User.findOneAndReplace({ name: req.body.user }, user, {
-//     upsert: true
-//   });
-//   res.status(200).json(newUser);
-// });
-
-app.get('/files', async (req, res) => {
-  const response = await getFiles(req.query.path, req.headers);
+app.get('/files', isAuth, async (req, res) => {
+  const user = await User.findById(req.userId).select('token cookie');
+  const response = await getFiles(req.query.path, user);
   res.header('Access-Control-Allow-Credentials', true);
   res.header(
     'Access-Control-Allow-Headers',

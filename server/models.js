@@ -8,29 +8,55 @@ const authorizationSchema = new mongoose.Schema({
 });
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
+  username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  isAdmin: { type: Boolean, default: false },
+  role: {
+    type: String,
+    enum: ['admin', 'user'],
+    default: 'user'
+  },
   token: String,
   cookie: String,
   expirationDate: Date
 });
-userSchema.virtual('id').get(() => this.name);
-userSchema.pre('findOneAndUpdate', async function (next) {
-  const updates = this.getUpdate();
-  const user = updates.$set || updates;
+userSchema.virtual('id').get(() => this.username);
+userSchema.pre(
+  ['save', 'update', 'findOneAndUpdate', 'findOneAndReplace'],
+  async function (next) {
+    const user = this;
+    const isSaveOperation = this.isNew;
+    const updates = isSaveOperation ? user : this.getUpdate();
 
-  if (!user.password) {
+    if (!updates || !updates.password) {
+      return next();
+    }
+
+    try {
+      const hashedPassword = await argon2.hash(updates.password);
+      updates.password = hashedPassword;
+    } catch (err) {
+      console.error('Error while hashing password : ', err);
+      return next(err);
+    }
+
     return next();
   }
-  try {
-    const hashedPassword = await argon2.hash(user.password);
-    user.password = hashedPassword;
-  } catch (err) {
-    console.error('Error while hashing password : ', err);
+);
+userSchema.statics.findByCredentials = async function (username, password) {
+  const user = await this.findOne({ username });
+
+  if (!user) {
+    throw new Error('User not found');
   }
-  return next();
-});
+
+  const isMatch = await argon2.verify(user.password, password);
+
+  if (!isMatch) {
+    throw new Error('Incorrect password');
+  }
+
+  return user;
+};
 
 const Authorization = mongoose.model('Authorization', authorizationSchema);
 const User = mongoose.model('User', userSchema);

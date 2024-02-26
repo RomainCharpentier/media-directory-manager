@@ -1,4 +1,9 @@
 import axios from 'axios';
+import dotenv from 'dotenv';
+
+if (process.env.NODE_ENV === 'development') {
+  dotenv.config({ path: '.env.local' });
+}
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -6,14 +11,14 @@ const headers = {
 };
 
 const axiosInstance = axios.create({
-  baseURL: 'http://192.168.1.90:5000',
+  baseURL: process.env.SYNOLOGY_URL,
   headers,
   withCredentials: true
 });
 
 axios.default
   .request({
-    baseURL: 'http://192.168.1.90:5000',
+    baseURL: process.env.SYNOLOGY_URL,
     withCredentials: 'true'
   })
   .then((res) => {
@@ -66,7 +71,7 @@ const createApi = async (api) => {
   return response;
 };
 
-const getFiles = (folder = '/Media', { synotoken, cookie }) => {
+const getFiles = (folder = '/Media', { token, cookie }) => {
   return createApi(() =>
     axiosInstance.get(
       '/webapi/entry.cgi',
@@ -75,7 +80,7 @@ const getFiles = (folder = '/Media', { synotoken, cookie }) => {
           api: 'SYNO.FileStation.List',
           version: '2',
           method: 'list',
-          SynoToken: synotoken,
+          SynoToken: token,
           folder_path: folder,
           additional: '["real_path","size","time,perm","type"]'
         },
