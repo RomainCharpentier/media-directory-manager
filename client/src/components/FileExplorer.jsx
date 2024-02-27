@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import folderIcon from '../ressources/folder.png';
 import fileIcon from '../ressources/file.png';
 import './FileExplorer.css';
-import { getFiles } from '../services/synology.service';
+import { getFiles } from '../services/auth.service';
 import { formatFileSize } from '../utils/format.utils';
 
 const DEFAULT_FOLDER = '/Media/Films/DC';

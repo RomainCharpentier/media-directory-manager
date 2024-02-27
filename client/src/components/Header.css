@@ -1,0 +1,23 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #333;
+  color: white;
+}
+
+.username {
+  margin-right: 10px;
+}
+
+.logout-btn {
+  background-color: transparent;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  text-decoration: underline;
+}
