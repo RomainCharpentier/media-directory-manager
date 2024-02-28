@@ -7,7 +7,7 @@ const generateToken = (user) => {
   const token = jwt.sign({ userId: user._id }, SECRET_KEY, {
     expiresIn: '1d'
   });
-  return token;
+  return 'Bearer ' + token;
 };
 
 const isAuth = (req, res, next) => {

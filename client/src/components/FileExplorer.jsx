@@ -9,15 +9,15 @@ const DEFAULT_FOLDER = '/Media/Films/DC';
 const FileExplorer = () => {
   const [files, setFiles] = useState([]);
   const [folderPath, setFolderPath] = useState(DEFAULT_FOLDER);
+  const [filesError, setFilesError] = useState(null);
 
   useEffect(() => {
-    fetchData(DEFAULT_FOLDER);
-  }, []);
+    fetchData(folderPath);
+  }, [folderPath]);
 
   const getFilesRecursive = async (folder) => {
     const response = await getFiles(folder);
     const files = response.data.data.files;
-
     return Promise.all(
       files.map(async (file) => {
         if (file.isdir) {
@@ -31,11 +31,13 @@ const FileExplorer = () => {
 
   const fetchData = async (folder) => {
     setFiles([]);
+    setFilesError(null);
     try {
       const folders = await getFilesRecursive(folder);
       setFiles(folders.sort((a, b) => getSize(b) - getSize(a)));
     } catch (error) {
       console.error('Error fetching data:', error);
+      setFilesError(error);
     }
   };
 
@@ -77,10 +79,16 @@ const FileExplorer = () => {
         {files.map((item) => (
           <li key={item.name}>
             <img src={item.isdir ? folderIcon : fileIcon} alt="file" />
-            <span className="file-info">
+            <span
+              className="file-info"
+              onClick={() => {
+                setFolderPath(item.path);
+              }}
+            >
               <span className="file-name">{item.name}</span>
               <span className="file-size">{formatFileSize(getSize(item))}</span>
             </span>
+            <button style={{ marginLeft: '10px' }}>Delete</button>
           </li>
         ))}
       </ul>
@@ -90,7 +98,15 @@ const FileExplorer = () => {
   return (
     <div className="file-explorer">
       <h1>Explorer le contenu d'un répertoire</h1>
+      <button
+        onClick={() =>
+          setFolderPath(folderPath.split('/').slice(0, -1).join('/'))
+        }
+      >
+        Back
+      </button>
       <input
+        style={{ width: '75%' }}
         type="text"
         value={folderPath}
         onChange={(e) => setFolderPath(e.target.value)}
@@ -98,7 +114,8 @@ const FileExplorer = () => {
       />
       <button onClick={() => fetchData(folderPath)}>Confirm</button>
       <div className="file-list">{renderFiles(files)}</div>
-      {(!files || !files.length) && <p>Chargement ...</p>}
+      {!files.length && !filesError && <p>Chargement ...</p>}
+      {filesError && <p>Error : {filesError.message}</p>}
     </div>
   );
 };

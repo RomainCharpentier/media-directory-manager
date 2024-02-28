@@ -18,6 +18,11 @@ li {
   align-items: center;
 }
 
+.file-info:hover {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
 .file-name {
   margin-left: 10px;
 }
@@ -44,5 +49,3 @@ img {
 .depth-3 {
   padding-left: 60px;
 }
-
-/* Ajoutez plus de styles pour d'autres niveaux de profondeur au besoin */

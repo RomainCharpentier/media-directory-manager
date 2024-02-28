@@ -8,13 +8,16 @@ const Header = () => {
   const navigate = useNavigate();
   return (
     <div className="header">
-      {isAuthenticated && <span className="username">Logged in as: XXXX</span>}
+      {isAuthenticated && (
+        <span className="username">Logged in as: {getItem('username')}</span>
+      )}
       {isAuthenticated && (
         <button
           className="logout-btn"
           onClick={() => {
             setItem('token', null);
             navigate('/login');
+            window.location.reload();
           }}
         >
           Logout

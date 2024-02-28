@@ -19,6 +19,7 @@ const Login = () => {
       const token = await login(username, password);
       setItem('token', token);
       navigate('/');
+      window.location.reload();
     } catch (e) {
       alert(e);
     }

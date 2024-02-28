@@ -76,8 +76,6 @@ app.post('/login', async (req, res) => {
         { $set: updatedUser },
         { new: true }
       );
-
-      console.log('updatedUser : ', user);
     }
     res.status(200).send(generateToken(user));
   } catch (error) {
@@ -123,6 +121,9 @@ app.get('/files', isAuth, async (req, res) => {
     'Access-Control-Allow-Headers',
     'Origin, X-Requested-With, Content-Type, Accept'
   );
+  if (response.data.error) {
+    res.sendStatus(500);
+  }
   res.send(response.data);
 });
 
