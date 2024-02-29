@@ -122,7 +122,8 @@ app.get('/files', isAuth, async (req, res) => {
     'Origin, X-Requested-With, Content-Type, Accept'
   );
   if (response.data.error) {
-    res.sendStatus(500);
+    console.error(response.data);
+    return res.sendStatus(500);
   }
   res.send(response.data);
 });

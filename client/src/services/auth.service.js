@@ -10,13 +10,18 @@ if (token) {
 
 export const login = async (username, password) => {
   try {
-    const response = await axios.post(`${backendUrl}/login`, {
-      username,
-      password,
-      params: {
-        connectToSyno: true
+    const response = await axios.post(
+      `${backendUrl}/login`,
+      {
+        username,
+        password
+      },
+      {
+        params: {
+          connectToSyno: true
+        }
       }
-    });
+    );
     if (response.status === 200) {
       setItem('username', username);
     }

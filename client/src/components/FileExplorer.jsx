@@ -1,9 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import folderIcon from '../ressources/folder.png';
-import fileIcon from '../ressources/file.png';
 import './FileExplorer.css';
 import { getFiles } from '../services/auth.service';
 import { formatFileSize } from '../utils/format.utils';
+import IconButton from '@mui/material/IconButton';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SearchIcon from '@mui/icons-material/Search';
+import VideoFileIcon from '@mui/icons-material/VideoFile';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import {
+  Button,
+  List,
+  TextField,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  ListItemButton,
+  Avatar
+} from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
+import FolderIcon from '@mui/icons-material/Folder';
+import { grey, pink, yellow } from '@mui/material/colors';
 
 const DEFAULT_FOLDER = '/Media/Films/DC';
 const FileExplorer = () => {
@@ -73,48 +90,80 @@ const FileExplorer = () => {
     }
   };
 
+  const getIcon = (file) => {
+    if (file.isdir) {
+      return <FolderIcon />;
+    }
+    switch (file.additional.type) {
+      case 'MKV':
+        return <VideoFileIcon />;
+      default:
+        return <InsertDriveFileIcon />;
+    }
+  };
+
   const renderFiles = (files, depth = 0) => {
     return (
-      <ul className={`depth-${depth}`}>
+      <List dense={true} sx={{ width: '100%' }}>
         {files.map((item) => (
-          <li key={item.name}>
-            <img src={item.isdir ? folderIcon : fileIcon} alt="file" />
-            <span
-              className="file-info"
+          <ListItem
+            secondaryAction={
+              <IconButton edge="end" aria-label="delete">
+                <DeleteIcon />
+              </IconButton>
+            }
+            disablePadding
+          >
+            <ListItemButton
               onClick={() => {
-                setFolderPath(item.path);
+                if (item.isdir) {
+                  setFolderPath(item.path);
+                }
               }}
             >
-              <span className="file-name">{item.name}</span>
-              <span className="file-size">{formatFileSize(getSize(item))}</span>
-            </span>
-            <button style={{ marginLeft: '10px' }}>Delete</button>
-          </li>
+              <ListItemAvatar>
+                <Avatar sx={{ bgcolor: item.isdir ? yellow[700] : grey[500] }}>
+                  {getIcon(item)}
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={item.name}
+                secondary={formatFileSize(getSize(item))}
+              />
+            </ListItemButton>
+          </ListItem>
         ))}
-      </ul>
+      </List>
     );
   };
 
   return (
     <div className="file-explorer">
       <h1>Explorer le contenu d'un répertoire</h1>
-      <button
-        onClick={() =>
-          setFolderPath(folderPath.split('/').slice(0, -1).join('/'))
-        }
-      >
-        Back
-      </button>
-      <input
-        style={{ width: '75%' }}
-        type="text"
-        value={folderPath}
-        onChange={(e) => setFolderPath(e.target.value)}
-        onKeyDown={handleKeyPress}
-      />
-      <button onClick={() => fetchData(folderPath)}>Confirm</button>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <IconButton
+          onClick={() =>
+            setFolderPath(folderPath.split('/').slice(0, -1).join('/'))
+          }
+        >
+          <ArrowBackIcon />
+        </IconButton>
+        <TextField
+          style={{ flex: '1' }}
+          label="Folder path"
+          variant="outlined"
+          value={folderPath}
+          onChange={(e) => setFolderPath(e.target.value)}
+          onKeyDown={handleKeyPress}
+        />
+        <IconButton aria-label="search" onClick={() => fetchData(folderPath)}>
+          <SearchIcon />
+        </IconButton>
+      </div>
       <div className="file-list">{renderFiles(files)}</div>
-      {!files.length && !filesError && <p>Chargement ...</p>}
+      {!files.length && !filesError && (
+        <CircularProgress color="inherit" size="5rem" />
+      )}
       {filesError && <p>Error : {filesError.message}</p>}
     </div>
   );

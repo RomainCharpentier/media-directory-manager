@@ -33,6 +33,15 @@ li {
   font-size: 0.8em;
 }
 
+.file-delete-icon {
+  margin-left: 10px;
+}
+
+.file-delete-icon:hover {
+  cursor: pointer;
+  color: #ba0000;
+}
+
 img {
   width: 20px;
   height: 20px;
