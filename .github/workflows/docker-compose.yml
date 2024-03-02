@@ -19,4 +19,4 @@ jobs:
         NAS_USER: ${{ secrets.NAS_USER }}
         NAS_PASSWORD: ${{ secrets.NAS_PASSWORD }}
       run: |
-        sshpass -p $NAS_PASSWORD ssh $NAS_USER@$NAS_IP 'cd /path/to/your/docker-compose; docker-compose up -d'
+        sshpass -p $NAS_PASSWORD ssh $NAS_USER@$NAS_IP 'docker-compose up -d'
