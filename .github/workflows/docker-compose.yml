@@ -1,0 +1,22 @@
+name: Deploy to NAS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Connect to NAS and deploy Docker Compose
+      env:
+        NAS_IP: ${{ secrets.NAS_IP }}
+        NAS_USER: ${{ secrets.NAS_USER }}
+        NAS_PASSWORD: ${{ secrets.NAS_PASSWORD }}
+      run: |
+        sshpass -p $NAS_PASSWORD ssh $NAS_USER@$NAS_IP 'cd /path/to/your/docker-compose; docker-compose up -d'
