@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './FileExplorer.css';
-import { getFiles } from '../services/auth.service';
+import { getFiles, getFile } from '../services/auth.service';
 import { formatFileSize } from '../utils/format.utils';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -16,7 +16,10 @@ import {
   ListItemAvatar,
   ListItemText,
   ListItemButton,
-  Avatar
+  Avatar,
+  Box,
+  Typography,
+  Modal
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -27,6 +30,7 @@ const FileExplorer = () => {
   const [files, setFiles] = useState([]);
   const [folderPath, setFolderPath] = useState(DEFAULT_FOLDER);
   const [filesError, setFilesError] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     fetchData(folderPath);
@@ -90,16 +94,19 @@ const FileExplorer = () => {
     }
   };
 
+  const iconsPerFileType = {
+    ['']: { color: yellow[700], icon: <FolderIcon /> },
+    MKV: { icon: <VideoFileIcon /> },
+    MP4: { icon: <VideoFileIcon /> }
+  };
+
   const getIcon = (file) => {
-    if (file.isdir) {
-      return <FolderIcon />;
-    }
-    switch (file.additional.type) {
-      case 'MKV':
-        return <VideoFileIcon />;
-      default:
-        return <InsertDriveFileIcon />;
-    }
+    const { color, icon } = iconsPerFileType[file.additional.type] ?? {};
+    return (
+      <Avatar sx={{ bgcolor: color ?? grey[500] }}>
+        {icon ?? <InsertDriveFileIcon />}
+      </Avatar>
+    );
   };
 
   const renderFiles = (files, depth = 0) => {
@@ -118,14 +125,16 @@ const FileExplorer = () => {
               onClick={() => {
                 if (item.isdir) {
                   setFolderPath(item.path);
+                } else {
+                  setSelectedFile(item);
                 }
+                console.log(item.additional.real_path);
+                getFile(item.additional.real_path)
+                  .then((e) => console.log(e))
+                  .catch((e) => console.log(e));
               }}
             >
-              <ListItemAvatar>
-                <Avatar sx={{ bgcolor: item.isdir ? yellow[700] : grey[500] }}>
-                  {getIcon(item)}
-                </Avatar>
-              </ListItemAvatar>
+              <ListItemAvatar>{getIcon(item)}</ListItemAvatar>
               <ListItemText
                 primary={item.name}
                 secondary={formatFileSize(getSize(item))}
@@ -165,6 +174,33 @@ const FileExplorer = () => {
         <CircularProgress color="inherit" size="5rem" />
       )}
       {filesError && <p>Error : {filesError.message}</p>}
+      <Modal
+        open={Boolean(selectedFile)}
+        onClose={() => setSelectedFile(null)}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: 'background.paper',
+            border: '2px solid #000',
+            boxShadow: 24,
+            p: 4
+          }}
+        >
+          <Typography id="modal-modal-title" variant="h6" component="h2">
+            {selectedFile?.name}
+          </Typography>
+          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+            Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
+          </Typography>
+        </Box>
+      </Modal>
     </div>
   );
 };

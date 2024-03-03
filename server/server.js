@@ -3,10 +3,11 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
-import { getFiles, login } from './synology.api.js';
+import { getFiles, login } from './api/synology.api.js';
 import { User } from './models.js';
 import dotenv from 'dotenv';
 import { generateToken, isAdmin, isAuth } from './utils/auth.js';
+import { getFile } from './api/emby.api.js';
 
 if (process.env.NODE_ENV === 'development') {
   dotenv.config({ path: '.env.local' });
@@ -26,7 +27,7 @@ mongoose
       process.env.MONGODB_URL
     );
     const adminData = {
-      username: process.env.ADMIN_NAME,
+      username: process.env.ADMIN_USERNAME,
       password: process.env.ADMIN_PASSWORD,
       role: 'admin'
     };
@@ -126,6 +127,18 @@ app.get('/files', isAuth, async (req, res) => {
     return res.sendStatus(500);
   }
   res.send(response.data);
+});
+
+app.get('/item', isAuth, async (req, res) => {
+  try {
+    const response = await getFile(req.query.path);
+    if (response.data.error) {
+      return res.sendStatus(500);
+    }
+    res.send(response.data);
+  } catch (e) {
+    return res.sendStatus(404);
+  }
 });
 
 app.delete('/files/:path', async (req, res) => {
