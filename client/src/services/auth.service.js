@@ -45,3 +45,16 @@ export const getFiles = async (path = '/Media') => {
     throw error;
   }
 };
+
+export const getFile = async (filePath) => {
+  try {
+    const token = localStorage.getItem('token').replace(/['"]+/g, '');
+    axios.defaults.headers.common['Authorization'] = token;
+    const response = await axios.get(`${backendUrl}/item`, {
+      params: { path: filePath }
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};

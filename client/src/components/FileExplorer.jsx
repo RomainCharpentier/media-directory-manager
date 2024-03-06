@@ -122,16 +122,15 @@ const FileExplorer = () => {
             disablePadding
           >
             <ListItemButton
-              onClick={() => {
+              onClick={async () => {
                 if (item.isdir) {
                   setFolderPath(item.path);
                 } else {
-                  setSelectedFile(item);
+                  const details = (await getFile(item.additional.real_path))
+                    .data.Items[0];
+                  console.log(details);
+                  setSelectedFile({ ...item, details });
                 }
-                console.log(item.additional.real_path);
-                getFile(item.additional.real_path)
-                  .then((e) => console.log(e))
-                  .catch((e) => console.log(e));
               }}
             >
               <ListItemAvatar>{getIcon(item)}</ListItemAvatar>
@@ -186,18 +185,25 @@ const FileExplorer = () => {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: 400,
+            width: '60%',
             bgcolor: 'background.paper',
             border: '2px solid #000',
             boxShadow: 24,
-            p: 4
+            p: 4,
+            overflowY: 'auto',
+            maxHeight: '80vh'
           }}
         >
           <Typography id="modal-modal-title" variant="h6" component="h2">
             {selectedFile?.name}
           </Typography>
           <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
+            {Object.keys(selectedFile?.details ?? {}).map((key) => (
+              <li>
+                {key} : {selectedFile?.details[key].toString().slice(0, 30)}
+                {selectedFile?.details[key].toString().length > 30 ? '...' : ''}
+              </li>
+            ))}
           </Typography>
         </Box>
       </Modal>
