@@ -9,7 +9,7 @@ COPY package*.json ./
 COPY . .
 
 # Installer les dépendances du client
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Exposer le port utilisé par le client React
 EXPOSE 3000

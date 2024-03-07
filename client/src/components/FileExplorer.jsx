@@ -9,7 +9,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import VideoFileIcon from '@mui/icons-material/VideoFile';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import {
-  Button,
   List,
   TextField,
   ListItem,
@@ -21,12 +20,37 @@ import {
   Typography,
   Modal
 } from '@mui/material';
+import { makeStyles } from '@mui/styles';
 import CircularProgress from '@mui/material/CircularProgress';
 import FolderIcon from '@mui/icons-material/Folder';
-import { grey, pink, yellow } from '@mui/material/colors';
+import { grey, yellow } from '@mui/material/colors';
+
+const useStyles = makeStyles(() => ({
+  modal: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  paper: {
+    position: 'absolute',
+    backgroundColor: '#FFFFFF',
+    border: '2px solid #000',
+    boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.5)',
+    padding: '16px',
+    overflowY: 'auto',
+    maxHeight: '80vh',
+    width: '60%'
+  },
+  modalContent: {
+    marginTop: '20px',
+    display: 'flex',
+    flexDirection: 'row'
+  }
+}));
 
 const DEFAULT_FOLDER = '/Media/Films/DC';
 const FileExplorer = () => {
+  const classes = useStyles();
   const [files, setFiles] = useState([]);
   const [folderPath, setFolderPath] = useState(DEFAULT_FOLDER);
   const [filesError, setFilesError] = useState(null);
@@ -178,32 +202,27 @@ const FileExplorer = () => {
         onClose={() => setSelectedFile(null)}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
+        className={classes.modal}
       >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '60%',
-            bgcolor: 'background.paper',
-            border: '2px solid #000',
-            boxShadow: 24,
-            p: 4,
-            overflowY: 'auto',
-            maxHeight: '80vh'
-          }}
-        >
+        <Box className={classes.paper}>
           <Typography id="modal-modal-title" variant="h6" component="h2">
             {selectedFile?.name}
           </Typography>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            {Object.keys(selectedFile?.details ?? {}).map((key) => (
-              <li>
-                {key} : {selectedFile?.details[key].toString().slice(0, 30)}
-                {selectedFile?.details[key].toString().length > 30 ? '...' : ''}
-              </li>
-            ))}
+          <Typography
+            id="modal-modal-description"
+            className={classes.modalContent}
+          >
+            <div>IMG</div>
+            <div>
+              {Object.keys(selectedFile?.details ?? {}).map((key) => (
+                <li>
+                  {key} : {selectedFile?.details[key].toString().slice(0, 30)}
+                  {selectedFile?.details[key].toString().length > 30
+                    ? '...'
+                    : ''}
+                </li>
+              ))}
+            </div>
           </Typography>
         </Box>
       </Modal>
